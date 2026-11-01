@@ -1,10 +1,6 @@
 # lojadoseuzebd
 Projeto de BD.  Enviar link do github com  Diagrama Entidade Relacionamento (se necessário) Arquivos com comandos pra criar e popular BD Exemplos de utilização do BD (idealmente com aplicação)
 
-#Comandos para criar e popular bd junto com exemplos de utilização:
-
-[Link com comandos para criar e popular bd e exemplos (Colab)](https://colab.research.google.com/drive/1KZxLDneCnnjpEjPCqZQiwIaxj4i0pq3q?usp=sharing)
-
 # Minimundo
 
 O sistema proposto visa gerenciar as operações de vendas, a cadeia de suprimentos e o controle financeiro de lucro de uma pequena loja varejista.
