@@ -1,24 +1,103 @@
-# lojadoseuzebd
-Projeto de BD.  Enviar link do github com  Diagrama Entidade Relacionamento (se necessário) Arquivos com comandos pra criar e popular BD Exemplos de utilização do BD (idealmente com aplicação)
+# Loja do Seu Zé — Sistema de Controle de Vendas e Estoque
 
-# Minimundo
+## O que é o sistema
 
-O sistema proposto visa gerenciar as operações de vendas, a cadeia de suprimentos e o controle financeiro de lucro de uma pequena loja varejista.
+Sistema de banco de dados para uma pequena loja varejista. Cobre três frentes:
 
-O estabelecimento comercial possui diversos Clientes cadastrados, dos quais armazenamos o nome, CPF/CNPJ e o e-mail. Cada cliente é identificado por um código único, e não pode haver dois clientes com o mesmo e-mail ou o mesmo documento físico.
+- Operações de venda
+- Cadeia de suprimentos (de onde vem a mercadoria)
+- Controle financeiro de lucro
 
-Para abastecer a loja, o sistema gerencia o cadastro de Fornecedores, de quem armazenamos a razão social, o CNPJ (único) e um telefone de contato. Cada fornecedor possui um código único de identificação.
+O Seu Zé consegue registrar vendas, saber de onde veio cada produto, quanto pagou, e calcular o lucro real.
 
-A loja comercializa uma variedade de Produtos. Cada produto possui um nome, preço de venda atual e a quantidade disponível em estoque. Cada produto é identificado por um código único. Para manter a organização e relatórios, cada produto pertence obrigatoriamente a uma única Categoria, e uma categoria pode abrigar vários produtos. Cada categoria possui um código único e um nome.
+---
 
-A entrada de mercadorias no estoque ocorre por meio de uma Compra. O processo de compra funciona como uma entidade intermediária entre fornecedores e produtos. Sempre que a loja se abastece, registra-se qual fornecedor vendeu a mercadoria, qual produto foi adquirido, a quantidade comprada, a data da operação e o preço de custo unitário cobrado pelo fornecedor. Essa estrutura garante o rastreamento do preço de custo histórico, permitindo que o sistema calcule posteriormente o lucro líquido real obtido pela loja.
+## Entidades
 
-Quando um cliente realiza uma aquisição, será registrada uma Venda. A venda armazena a data e horário em que foi feita, o valor total bruto, o status atual (ex: 'PAGA', 'PENDENTE' ou 'CANCELADA') e fica associada ao cliente que realizou a operação. Cada venda é identificada por um código único. Para que uma venda seja concluída, é obrigatório registrar o seu Pagamento, onde mapeamos a forma de pagamento utilizada (ex: 'PIX', 'DINHEIRO') e o valor efetivamente pago.
+### Cliente
 
-Uma venda pode ter um ou vários produtos, e um mesmo produto pode ser vendido em diferentes ocasiões. Para gerenciar essa relação, cada venda possui Itens da Venda, onde é registrada a quantidade comprada de cada produto e o preço unitário praticado no momento exato daquela venda. Esse preço é armazenado no item para preservar o histórico financeiro, mesmo que o preço de varejo do produto mude no cadastro principal. Um mesmo produto aparece no máximo uma vez em cada venda, e cada item é identificado pela combinação (chave composta) do código da venda mais o código do produto.
+Quem compra na loja.
 
-Sempre que uma compra é registrada no sistema, a quantidade em estoque do produto aumenta. Inversamente, sempre que uma venda é concluída com sucesso, a quantidade em estoque de cada produto vendido deve ser reduzida de acordo com a quantidade informada no item.
+- **Atributos:** código (PK), nome, CPF/CNPJ (único), e-mail (único)
+- **Restrições:** não pode ter dois clientes com mesmo CPF nem mesmo e-mail — evita cadastro duplicado
 
+### Fornecedor
+
+Quem abastece a loja.
+
+- **Atributos:** código (PK), razão social, CNPJ (único), telefone
+- **Exemplos:** Distribuidora Norte (bebidas/salgados), Tabacaria Central, Doces & Cia, Fazenda Boa Vista (frutas/laticínios)
+
+### Categoria
+
+Organiza os produtos para relatórios.
+
+- **Atributos:** código (PK), nome
+- **Categorias:** Bebida, Fruta, Cigarro, Salgado, Doce, Laticínio
+- Todo produto pertence obrigatoriamente a uma categoria
+- Uma categoria pode ter vários produtos
+
+### Produto
+
+O que a loja vende.
+
+- **Atributos:** código (PK), nome, preço de venda atual, quantidade em estoque, categoria (FK)
+- **Exemplos:** Cafézinho (Bebida, R$2,00), Coxinha (Salgado, R$2,50), Bad Moro (Cigarro, R$50,00)
+- Estoque atualiza automaticamente: sobe na compra, desce na venda
+
+### Compra
+
+Entrada de mercadoria — liga fornecedor a produto.
+
+- **Atributos:** código (PK), fornecedor (FK), produto (FK), quantidade comprada, preço de custo unitário, data
+- **Por que é importante:** sem o custo registrado, o Seu Zé saberia o faturamento mas não o lucro real
+- **Exemplo:** cafézinho comprado a R$0,80, vendido a R$2,00 → lucro de R$1,20 por unidade
+
+### Venda
+
+Quando o cliente compra algo.
+
+- **Atributos:** código (PK), data/hora, valor total, status (PAGA / PENDENTE / CANCELADA), cliente (FK)
+- Cada venda tem um código único
+
+### Item da Venda
+
+Detalhe de cada produto dentro de uma venda.
+
+- **Atributos:** código da venda (FK), código do produto (FK), quantidade, preço unitário gravado
+- **Chave primária composta:** código da venda + código do produto (mesmo produto aparece no máximo 1 vez por venda — se quer 5 cafézinhos, é 1 linha com quantidade 5)
+- **Preço gravado:** é o preço no momento da venda. Se o Seu Zé aumentar o cafézinho amanhã, as vendas de hoje não mudam. Preço no produto = atual, preço no item = histórico
+
+### Pagamento da Venda
+
+Como o cliente pagou.
+
+- **Atributos:** código (PK), venda (FK), forma de pagamento (PIX, DINHEIRO), valor pago
+- **Por que é tabela separada e não uma coluna na venda:** permite pagamento dividido (ex: venda 7 — R$5,00 em dinheiro + R$4,50 no PIX)
+- Vendas PENDENTE e CANCELADA não têm pagamento
+
+---
+
+## Controle de estoque
+
+- Compra registrada → estoque do produto **sobe**
+- Venda concluída → estoque **desce**
+- Venda cancelada → estoque **volta**
+- O sistema valida antes de vender: se não tem estoque suficiente, a venda não é registrada
+
+---
+
+## Ciclo completo
+
+```
+Fornecedor → Compra → Estoque do Produto → Venda → Item da Venda → Pagamento
+                                                          ↓
+                                                       Cliente
+```
+
+Mercadoria entra pelo fornecedor, fica no estoque, sai pela venda pro cliente, e o pagamento fecha o ciclo financeiro.
+
+---
 
 # Diagrama lojadoseuzebd: 
 
